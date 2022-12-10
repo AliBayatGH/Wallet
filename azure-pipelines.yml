@@ -1,0 +1,31 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - develop
+
+resources:
+ repositories:
+   - repository: tpls
+     type: git
+     name: Hastim/HIT.Hastim.pipeLines
+
+extends:
+  template: core-yaml.yml@tpls
+  parameters:
+    agentName: cms_group
+    project: Hastim
+    repo: HIT.Hastim.HastiWallet
+    projects:
+      - alias: walletservice
+        name:  HIT.Hastim.Accounting.Endpoints.AdminApi
+        path:  WalletService/03.Endpoints/HIT.Hastim.Accounting.Endpoints.AdminApi
+        linuxFriendlyPath: src\/03.Endpoints\/HIT.Hastim.Accounting.Endpoints.AdminApi
+      - alias: accountingweb
+        name:  HIT.Hastim.Accounting.Endpoints.WebApi
+        path:  src/03.Endpoints/HIT.Hastim.Accounting.EndPoints.WebApi
+        linuxFriendlyPath: src\/03.Endpoints\/HIT.Hastim.Accounting.EndPoints.WebApi
+      - alias: accountingapp
+        name:  HIT.Hastim.Accounting.Endpoints.AppApi
+        path:  src/03.Endpoints/HIT.Hastim.Accounting.Endpoints.AppApi
+        linuxFriendlyPath: src\/03.Endpoints\/HIT.Hastim.Accounting.Endpoints.AppApi
