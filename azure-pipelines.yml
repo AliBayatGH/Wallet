@@ -19,13 +19,5 @@ extends:
     projects:
       - alias: walletservice
         name:  HIT.Hastim.Accounting.Endpoints.AdminApi
-        path:  WalletService/03.Endpoints/HIT.Hastim.Accounting.Endpoints.AdminApi
-        linuxFriendlyPath: src\/03.Endpoints\/HIT.Hastim.Accounting.Endpoints.AdminApi
-      - alias: accountingweb
-        name:  HIT.Hastim.Accounting.Endpoints.WebApi
-        path:  src/03.Endpoints/HIT.Hastim.Accounting.EndPoints.WebApi
-        linuxFriendlyPath: src\/03.Endpoints\/HIT.Hastim.Accounting.EndPoints.WebApi
-      - alias: accountingapp
-        name:  HIT.Hastim.Accounting.Endpoints.AppApi
-        path:  src/03.Endpoints/HIT.Hastim.Accounting.Endpoints.AppApi
-        linuxFriendlyPath: src\/03.Endpoints\/HIT.Hastim.Accounting.Endpoints.AppApi
+        path:  WalletService/Services
+        linuxFriendlyPath: WalletService\/Services
