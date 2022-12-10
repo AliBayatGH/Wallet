@@ -18,6 +18,6 @@ extends:
     repo: HIT.Hastim.HastiWallet
     projects:
       - alias: walletservice
-        name:  HIT.Hastim.Accounting.Endpoints.AdminApi
+        name:  Services
         path:  WalletService/Services
         linuxFriendlyPath: WalletService\/Services
