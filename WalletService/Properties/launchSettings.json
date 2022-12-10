@@ -1,43 +1,48 @@
-﻿{
-	"$schema": "https://json.schemastore.org/launchsettings.json",
-	"iisSettings": {
-		"windowsAuthentication": false,
-		"anonymousAuthentication": true,
-		"iisExpress": {
-			"applicationUrl": "http://localhost:19742",
-			"sslPort": 44328
-		}
-	},
-	"profiles": {
-		"WalletService": {
-			"commandName": "Project",
-			"dotnetRunMessages": true,
-			"launchBrowser": true,
-			"launchUrl": "swagger",
-			"applicationUrl": "https://localhost:7087;http://localhost:5087",
-			"environmentVariables": {
-				"ASPNETCORE_ENVIRONMENT": "Development"
-			}
-		},
-		"WalletService Mem": {
-			"commandName": "Project",
-			"dotnetRunMessages": true,
-			"launchBrowser": false,
-			"launchUrl": "swagger",
-			"applicationUrl": "https://localhost:7087;http://localhost:5087",
-			"environmentVariables": {
-				"ASPNETCORE_ENVIRONMENT": "Production",
-				"DOTNET_GCHeapHardLimit": "7A12000" // 128 MB
-			}
-		},
-
-		"IIS Express": {
-			"commandName": "IISExpress",
-			"launchBrowser": true,
-			"launchUrl": "swagger",
-			"environmentVariables": {
-				"ASPNETCORE_ENVIRONMENT": "Development"
-			}
-		}
-	}
+{
+  "profiles": {
+    "WalletService": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7087;http://localhost:5087"
+    },
+    "WalletService Mem": {
+      "commandName": "Project",
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "DOTNET_GCHeapHardLimit": "7A12000"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7087;http://localhost:5087"
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
+      "publishAllPorts": true,
+      "useSSL": true
+    }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:19742",
+      "sslPort": 44328
+    }
+  }
 }
