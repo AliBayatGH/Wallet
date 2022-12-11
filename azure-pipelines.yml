@@ -11,7 +11,7 @@ resources:
      name: Hastim/HIT.Hastim.pipeLines
 
 extends:
-  template: core-yaml.yml@tpls
+  template: wallet-core-yaml.yml@tpls
   parameters:
     agentName: cms_group
     project: Hastim
