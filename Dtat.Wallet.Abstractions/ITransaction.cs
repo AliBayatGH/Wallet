@@ -1,7 +1,9 @@
-﻿namespace Dtat.Wallet.Abstractions;
+﻿using Dtat.Wallet.Abstractions.SeedWork;
+
+namespace Dtat.Wallet.Abstractions;
 
 public interface ITransaction<T> :
-	SeedWork.IEntity<T>, SeedWork.IHashing<T> where T : struct
+	SeedWork.IEntity<T>, SeedWork.IHashing where T : struct
 {
 	T UserId { get; }
 
@@ -26,6 +28,10 @@ public interface ITransaction<T> :
 	/// تسویه شده
 	/// </summary>
 	bool IsCleared { get; }
+
+	TransactionType Type { get; }
+
+
 
 	/// <summary>
 	/// تاریخی که از آن زمان به بعد امکان برداشت از حساب وجود دارد
