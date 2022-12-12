@@ -12,10 +12,23 @@ public class Transaction :
 		UserIP = userIP;
 		ServerIP = serverIP;
 		WalletId = walletId;
+
+		SubTransactions =
+			new System.Collections.Generic.List<Transaction>();
 	}
 	#endregion /Constructor
 
 	#region Properties
+
+	#region ParentTransactionId
+	public long? ParentTransactionId { get; set; }
+	#endregion ParentTransactionId
+
+	#region ParentTransaction
+	public Transaction? ParentTransaction { get; set; }
+	#endregion ParentTransaction
+
+
 
 	#region UserId
 	public long UserId { get; private set; }
@@ -61,15 +74,31 @@ public class Transaction :
 	public bool IsCleared { get; set; }
 	#endregion /IsCleared
 
+
+
 	#region Type
 	public Dtat.Wallet.Abstractions.SeedWork.TransactionType Type { get; set; }
 	#endregion /Type
 
 
 
-	#region WithdrawDateTime
-	public System.DateTime? WithdrawDateTime { get; set; }
-	#endregion /WithdrawDateTime
+	#region WithdrawDate
+	public System.DateTime? WithdrawDate { get; private set; }
+
+	public void UpdateWithdrawDate
+		(System.DateTime? value)
+	{
+		if (value.HasValue == false)
+		{
+			WithdrawDate = null;
+		}
+		else
+		{
+			WithdrawDate =
+				value.Value.Date;
+		}
+	}
+	#endregion /WithdrawDate
 
 	#region TransactionDuration
 	public System.TimeSpan TransactionDuration { get; set; }
@@ -133,6 +162,13 @@ public class Transaction :
 	public string? SystemicDescription { get; set; }
 	#endregion /SystemicDescription
 
+
+
+	#region SubTransactions
+	[System.Text.Json.Serialization.JsonIgnore]
+	public virtual System.Collections.Generic.IList<Transaction> SubTransactions { get; set; }
+	#endregion SubTransactions
+
 	#endregion /Properties
 
 	#region Methods
@@ -179,7 +215,13 @@ public class Transaction :
 			(value: Dtat.ConvertForHashing.Separator());
 
 		stringBuilder.Append
-			(value: $"{nameof(WithdrawDateTime)}:{Dtat.ConvertForHashing.FromDateTime(value: WithdrawDateTime)}");
+			(value: $"{nameof(Type)}:{Type}");
+
+		stringBuilder.Append
+			(value: Dtat.ConvertForHashing.Separator());
+
+		stringBuilder.Append
+			(value: $"{nameof(WithdrawDate)}:{Dtat.ConvertForHashing.FromDateTime(value: WithdrawDate)}");
 
 		stringBuilder.Append
 			(value: Dtat.ConvertForHashing.Separator());

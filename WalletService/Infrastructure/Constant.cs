@@ -45,9 +45,17 @@ public static class Constant : object
 
 		public const long Root_UsersController_Deposite = UsersController + 102;
 
-		public const long Root_UsersController_GetBalance = UsersController + 103;
+		public const long Root_UsersController_Withdraw = UsersController + 103;
 
-		public const long Root_UsersController_GetLastTransactions = UsersController + 104;
+		public const long Root_UsersController_Refund = UsersController + 104;
+
+		public const long Root_UsersController_GetBalance = UsersController + 105;
+
+		public const long Root_UsersController_GetLastTransactions = UsersController + 106;
+
+		public const long Root_UsersController_GetTransactionById = UsersController + 107;
+
+		public const long Root_UsersController_GetUserTransactionsByCellPhoneNumber = UsersController + 108;
 		// **********
 
 		// **********
