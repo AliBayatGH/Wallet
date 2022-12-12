@@ -311,84 +311,6 @@ public class UsersController :
 	}
 	#endregion /Action: GetBalance()
 
-	//#region Action: GetLastTransactionsAsync()
-	//[Microsoft.AspNetCore.Mvc.HttpGet
-	//	(template: "[action]/{walletToken}/{cellPhoneNumber}/{count}")]
-
-	//[Microsoft.AspNetCore.Mvc.ProducesResponseType
-	//	(type: typeof(Domain.Wallet),
-	//	statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status200OK)]
-
-	//[Microsoft.AspNetCore.Mvc.ProducesResponseType
-	//	(type: typeof(string),
-	//	statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status500InternalServerError)]
-
-	//[Microsoft.AspNetCore.Mvc.ProducesResponseType
-	//	(type: typeof(string),
-	//	statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status404NotFound)]
-	//public async System.Threading.Tasks.Task
-	//	<Microsoft.AspNetCore.Mvc.ActionResult<System.Collections.Generic.IList<Domain.Transaction>>>
-	//	GetLastTransactionsAsync(System.Guid walletToken, string cellPhoneNumber, int count)
-	//{
-	//	try
-	//	{
-	//		//var foundedUserWallet =
-	//		//	await
-	//		//	DatabaseContext.UserWallets
-	//		//	.AsNoTracking()
-	//		//	.Where(current => current.IsActive)
-
-	//		//	.Where(current => current.Wallet != null && current.Wallet.IsActive)
-	//		//	.Where(current => current.Wallet != null && current.Wallet.Token == walletToken)
-
-	//		//	.Where(current => current.User != null && current.User.IsActive)
-	//		//	.Where(current => current.User != null && current.User.CellPhoneNumber == cellPhoneNumber)
-	//		//	.FirstOrDefaultAsync();
-
-	//		// فارغ از هر شرایطی، امکان نمایش تراکنش‌های کاربر
-	//		// بر روی کیف پول باید امکان‌پذیر باشد
-	//		var foundedUserWallet =
-	//			await
-	//			DatabaseContext.UserWallets
-	//			.AsNoTracking()
-	//			.Where(current => current.Wallet != null && current.Wallet.Token == walletToken)
-	//			.Where(current => current.User != null && current.User.CellPhoneNumber == cellPhoneNumber)
-	//			.FirstOrDefaultAsync();
-
-	//		if (foundedUserWallet == null)
-	//		{
-	//			return NotFound(value: null);
-	//		}
-
-	//		var transactions =
-	//			await
-	//			DatabaseContext.Transactions
-	//			.AsNoTracking()
-	//			.Where(current => current.UserId == foundedUserWallet.UserId)
-	//			.Where(current => current.WalletId == foundedUserWallet.WalletId)
-	//			.Skip(count: 0)
-	//			.Take(count: count)
-	//			.ToListAsync()
-	//			;
-
-	//		return Ok(value: transactions);
-	//	}
-	//	catch (System.Exception ex)
-	//	{
-	//		var applicationError =
-	//			new Infrastructure.ApplicationError
-	//			(code: Infrastructure.Constant.ErrorCode.Root_UsersController_GetLastTransactionsAsync,
-	//			message: ex.Message, innerException: ex);
-
-	//		Logger.LogError
-	//			(message: Infrastructure.Constant.Message.LogError, applicationError.Message);
-
-	//		return StatusCode(statusCode: Microsoft.AspNetCore
-	//			.Http.StatusCodes.Status500InternalServerError, value: applicationError.DisplayMessage);
-	//	}
-	//}
-	//#endregion /Action: GetLastTransactions()
-
 	#region Action: Deposite()
 	/// <summary>
 	/// تعریف نمی‌کنیم Async به دلیل مسائل امنیتی و هم‌زمانی این تابع را
@@ -423,6 +345,20 @@ public class UsersController :
 				var errorMessage = string.Format
 					(format: Resources.Messages.Errors.TheItemIsNull,
 					arg0: nameof(serverIP));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			if (request == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(request));
 
 				result.AddErrorMessages
 					(message: errorMessage);
@@ -649,7 +585,8 @@ public class UsersController :
 				var transaction =
 					new Domain.Transaction
 					(userId: user.Id, walletId: wallet.Id,
-					amount: request.Amount, userIP: request.User.IP, serverIP: serverIP)
+					amount: request.Amount, serverIP: serverIP,
+					userIP: request.User.IP, cellPhoneNumber: request.User.CellPhoneNumber)
 					{
 						ServerIP = serverIP,
 						UserIP = request.User.IP,
@@ -665,6 +602,19 @@ public class UsersController :
 
 						Type = Dtat.Wallet.Abstractions.SeedWork.TransactionType.Deposite,
 					};
+
+				if (request.WithdrawDurationInDays.HasValue == false)
+				{
+					transaction.UpdateWithdrawDate(value: null);
+				}
+				else
+				{
+					var now =
+						Utility.GetNow().AddDays
+						(value: request.WithdrawDurationInDays.Value);
+
+					transaction.UpdateWithdrawDate(value: now);
+				}
 
 				transaction.UpdateHash();
 
@@ -939,25 +889,28 @@ public class UsersController :
 				// بدست آوردن مانده کیف پول کاربر
 				// با احتساب چک کردن معتبر بودن آن
 				// **************************************************
-				var balanceResult =
+				var userBalanceResult =
 					Services.UserWalletsService.GetUserBalanceWithCheckingDataConsistency
 					(databaseContext: DatabaseContext, walletToken: request.WalletToken,
 					cellPhoneNumber: request.User.CellPhoneNumber, userWallet: userWallet);
 
-				if (balanceResult.IsSuccess == false)
+				if (userBalanceResult.IsSuccess == false)
 				{
-					return Ok(value: balanceResult);
+					return Ok(value: userBalanceResult);
 				}
+
+				var userBalance =
+					userBalanceResult.Data;
 				// **************************************************
 
 				// **************************************************
 				// کاهش مانده حساب کاربر در کیف پول جاری
 				// **************************************************
-				if (request.Amount > userWallet.Balance)
+				if (request.Amount > userBalance)
 				{
 					var errorMessage = string.Format
 						(format: Resources.Messages.Errors.TheAmountValueIsMore,
-						arg0: nameof(Domain.UserWallet.Balance));
+						arg0: nameof(userBalance));
 
 					result.AddErrorMessages(message: errorMessage);
 
@@ -985,7 +938,8 @@ public class UsersController :
 				var transaction =
 					new Domain.Transaction
 					(userId: user.Id, walletId: wallet.Id,
-					amount: transactionAmount, userIP: request.User.IP, serverIP: serverIP)
+					amount: transactionAmount, serverIP: serverIP,
+					userIP: request.User.IP, cellPhoneNumber: request.User.CellPhoneNumber)
 					{
 						ServerIP = serverIP,
 						UserIP = request.User.IP,
@@ -1017,8 +971,8 @@ public class UsersController :
 				// **************************************************
 				// TODO
 				var paymentResponseDto =
-					new Dtos.Users.PaymentResponseDto
-					(balance: userWallet.Balance, withdrawBalance: 0, transactionId: transaction.Id);
+					new Dtos.Users.PaymentResponseDto(balance: userWallet.Balance,
+					withdrawBalance: 0, transactionId: transaction.Id);
 
 				result.Data =
 					paymentResponseDto;
@@ -1357,7 +1311,8 @@ public class UsersController :
 				var transaction =
 					new Domain.Transaction
 					(userId: user.Id, walletId: wallet.Id,
-					amount: transactionAmount, userIP: request.User.IP, serverIP: serverIP)
+					amount: transactionAmount, serverIP: serverIP,
+					userIP: request.User.IP, cellPhoneNumber: request.User.CellPhoneNumber)
 					{
 						ServerIP = serverIP,
 						UserIP = request.User.IP,
@@ -1729,7 +1684,8 @@ public class UsersController :
 				var transaction =
 					new Domain.Transaction
 					(userId: user.Id, walletId: wallet.Id,
-					amount: request.Amount, userIP: request.User.IP, serverIP: serverIP)
+					amount: request.Amount, serverIP: serverIP,
+					userIP: request.User.IP, cellPhoneNumber: request.User.CellPhoneNumber)
 					{
 						ServerIP = serverIP,
 						UserIP = request.User.IP,
@@ -1746,6 +1702,19 @@ public class UsersController :
 
 						Type = Dtat.Wallet.Abstractions.SeedWork.TransactionType.Refund,
 					};
+
+				if (request.WithdrawDurationInDays.HasValue == false)
+				{
+					transaction.UpdateWithdrawDate(value: null);
+				}
+				else
+				{
+					var now =
+						Utility.GetNow().AddDays
+						(value: request.WithdrawDurationInDays.Value);
+
+					transaction.UpdateWithdrawDate(value: now);
+				}
 
 				transaction.UpdateHash();
 
@@ -1785,31 +1754,254 @@ public class UsersController :
 	}
 	#endregion /Action: Refund()
 
-	#region Action: GetTransactionByIdAsync()
-	[Microsoft.AspNetCore.Mvc.HttpGet(template: "{id}/transaction")]
+	#region Action: GetTransaction()
+	[Microsoft.AspNetCore.Mvc.HttpPost(template: "[action]")]
 
 	[Microsoft.AspNetCore.Mvc.ProducesResponseType
-		(type: typeof(Dtos.Users.GetTransactionResponseDto),
+		(type: typeof(Dtat.Result<Dtos.Users.GetTransactionResponseDto>),
 		statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status200OK)]
 
 	[Microsoft.AspNetCore.Mvc.ProducesResponseType
 		(type: typeof(string),
 		statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status500InternalServerError)]
-
-	[Microsoft.AspNetCore.Mvc.ProducesResponseType
-		(type: typeof(string),
-		statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status404NotFound)]
 	public async System.Threading.Tasks.Task
-		<Microsoft.AspNetCore.Mvc.ActionResult<Dtos.Users.GetTransactionResponseDto>>
-		GetTransactionByPaymentReferenceCodeAsync(long id)
+		<Microsoft.AspNetCore.Mvc.ActionResult<Dtat.Result<Dtos.Users.GetTransactionResponseDto>>>
+		GetTransaction(Dtos.Users.GetTransactionRequestDto request)
 	{
 		try
 		{
-			var item =
+			var result = new Dtat.Result
+				<Dtos.Users.GetTransactionResponseDto>();
+
+			// **************************************************
+			// بدست آوردن آی‌پی سرور درخواست کننده
+			// **************************************************
+			var serverIP =
+				Utility.GetServerIP(request: Request);
+
+			if (serverIP == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(serverIP));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			if (request == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(request));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی معتبر بودن فیلدهای ارسال شده
+			// **************************************************
+			var validateEntityResult =
+				Dtat.Utility.ValidateEntity(entity: request);
+
+			if (validateEntityResult.IsSuccess == false)
+			{
+				return Ok(value: validateEntityResult);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی شرکت بر اساس توکن
+			// **************************************************
+			var companyResult =
+				Services.CompaniesService.CheckAndGetCompanyByToken
+				(databaseContext: DatabaseContext, token: request.CompanyToken);
+
+			if (companyResult.IsSuccess == false)
+			{
+				return Ok(value: companyResult);
+			}
+
+			var company =
+				companyResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (company == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(company));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی مجاز بودن آی‌پی سرور درخواست کننده
+			// **************************************************
+			var validIPResult =
+				Services.ValidIPsService.CheckServerIPByCompanyToken
+				(databaseContext: DatabaseContext, serverIP: serverIP,
+				companyToken: request.CompanyToken, walletToken: request.WalletToken,
+				cellPhoneNumber: request.User.CellPhoneNumber, utility: Utility);
+
+			if (validIPResult.IsSuccess == false)
+			{
+				return Ok(value: validIPResult);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی کیف پول بر اساس توکن
+			// **************************************************
+			var walletResult =
+				Services.WalletsService.CheckAndGetWalletByToken
+				(databaseContext: DatabaseContext, token: request.WalletToken);
+
+			if (walletResult.IsSuccess == false)
+			{
+				return Ok(value: walletResult);
+			}
+
+			var wallet =
+				walletResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (wallet == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(wallet));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی دسترسی شرکت به کیف پول مربوطه، بر اساس توکن‌های آن‌ها
+			// **************************************************
+			var companyWalletResult =
+				Services.CompanyWalletsService.CheckAndGetCompanyWalletByTokens
+				(databaseContext: DatabaseContext, companyToken: request.CompanyToken, walletToken: request.WalletToken);
+
+			if (companyWalletResult.IsSuccess == false)
+			{
+				return Ok(value: companyWalletResult);
+			}
+
+			var companyWallet =
+				companyWalletResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (companyWallet == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(companyWallet));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی کاربر
+			// **************************************************
+			var userResult =
+				Services.UsersService.CheckAndGetUserByCellPhoneNumber
+				(databaseContext: DatabaseContext,
+				cellPhoneNumber: request.User.CellPhoneNumber);
+
+			if (userResult.IsSuccess == false)
+			{
+				return Ok(value: userResult);
+			}
+
+			var user =
+				userResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (user == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(user));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی دسترسی کاربر به کیف پول مربوطه
+			// **************************************************
+			var userWalletResult =
+				Services.UserWalletsService.CheckAndGetUserWallet(databaseContext: DatabaseContext,
+				cellPhoneNumber: request.User.CellPhoneNumber, walletToken: request.WalletToken);
+
+			if (userWalletResult.IsSuccess == false)
+			{
+				return Ok(value: userWalletResult);
+			}
+
+			var userWallet =
+				userWalletResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (userWallet == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(userWallet));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بدست آوردن مانده کیف پول کاربر
+			// با احتساب چک کردن معتبر بودن آن
+			// **************************************************
+			var userBalanceResult =
+				Services.UserWalletsService.GetUserBalanceWithCheckingDataConsistency
+				(databaseContext: DatabaseContext, walletToken: request.WalletToken,
+				cellPhoneNumber: request.User.CellPhoneNumber, userWallet: userWallet);
+
+			if (userBalanceResult.IsSuccess == false)
+			{
+				return Ok(value: userBalanceResult);
+			}
+			// **************************************************
+
+			// **************************************************
+			var foundedItem =
 				await
 				DatabaseContext.Transactions
 				.AsNoTracking()
-				.Where(current => current.Id == id)
+				.Where(current => current.Id == request.TransactionId)
+				.Where(current => current.WalletId == wallet.Id)
+				.Where(current => current.User != null && current.User.CellPhoneNumber == request.User.CellPhoneNumber)
 				.Select(current => new Dtos.Users.GetTransactionResponseDto
 				{
 					Type = current.Type,
@@ -1818,7 +2010,6 @@ public class UsersController :
 					UserId = current.UserId,
 					WalletId = current.WalletId,
 					IsCleared = current.IsCleared,
-					PartyUserId = current.PartyUserId,
 					WithdrawDate = current.WithdrawDate,
 					AdditionalData = current.AdditionalData,
 					InsertDateTime = current.InsertDateTime,
@@ -1829,13 +2020,25 @@ public class UsersController :
 					DepositeOrWithdrawReferenceCode = current.DepositeOrWithdrawReferenceCode,
 				})
 				.FirstOrDefaultAsync();
+			// **************************************************
 
-			if (item == null)
+			// **************************************************
+			if (foundedItem == null)
 			{
-				return NotFound(value: Infrastructure.Constant.Message.NotFound);
-			}
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(Domain.Transaction));
 
-			return Ok(value: item);
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			result.Data = foundedItem;
+
+			return Ok(value: result);
 		}
 		catch (System.Exception ex)
 		{
@@ -1851,13 +2054,13 @@ public class UsersController :
 				.Http.StatusCodes.Status500InternalServerError, value: applicationError.DisplayMessage);
 		}
 	}
-	#endregion /Action: GetTransactionByIdAsync()
+	#endregion /Action: GetTransaction()
 
-	#region Action: GetUserTransactionsByCellPhoneNumberAsync()
-	[Microsoft.AspNetCore.Mvc.HttpPost(template: "transactions/cellPhoneNumber")]
+	#region Action: GetTransactions()
+	[Microsoft.AspNetCore.Mvc.HttpPost(template: "[action]")]
 
 	[Microsoft.AspNetCore.Mvc.ProducesResponseType
-		(type: typeof(System.Collections.Generic.IEnumerable<Dtos.Users.GetTransactionResponseDto>),
+		(type: typeof(Dtat.Result<Dtos.Users.GetTransactionsResponseDto>),
 		statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status200OK)]
 
 	[Microsoft.AspNetCore.Mvc.ProducesResponseType
@@ -1865,17 +2068,250 @@ public class UsersController :
 		statusCode: Microsoft.AspNetCore.Http.StatusCodes.Status500InternalServerError)]
 	public async System.Threading.Tasks.Task
 		<Microsoft.AspNetCore.Mvc.ActionResult
-		<System.Collections.Generic.IEnumerable<Dtos.Users.GetTransactionResponseDto>>>
-		GetUserTransactionsByCellPhoneNumberAsync
-		(Dtos.Users.GetTransactionRequestDto request)
+		<Dtat.Result<Dtos.Users.GetTransactionsResponseDto>>>
+		GetTransactions(Dtos.Users.GetTransactionsRequestDto request)
 	{
 		try
 		{
-			var items =
-				await
-				DatabaseContext.Transactions
+			var result = new Dtat.Result
+				<Dtos.Users.GetTransactionsResponseDto>();
+
+			// **************************************************
+			// بدست آوردن آی‌پی سرور درخواست کننده
+			// **************************************************
+			var serverIP =
+				Utility.GetServerIP(request: Request);
+
+			if (serverIP == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(serverIP));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			if (request == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(request));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی معتبر بودن فیلدهای ارسال شده
+			// **************************************************
+			var validateEntityResult =
+				Dtat.Utility.ValidateEntity(entity: request);
+
+			if (validateEntityResult.IsSuccess == false)
+			{
+				return Ok(value: validateEntityResult);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی شرکت بر اساس توکن
+			// **************************************************
+			var companyResult =
+				Services.CompaniesService.CheckAndGetCompanyByToken
+				(databaseContext: DatabaseContext, token: request.CompanyToken);
+
+			if (companyResult.IsSuccess == false)
+			{
+				return Ok(value: companyResult);
+			}
+
+			var company =
+				companyResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (company == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(company));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی مجاز بودن آی‌پی سرور درخواست کننده
+			// **************************************************
+			var validIPResult =
+				Services.ValidIPsService.CheckServerIPByCompanyToken
+				(databaseContext: DatabaseContext, serverIP: serverIP,
+				companyToken: request.CompanyToken, walletToken: request.WalletToken,
+				cellPhoneNumber: request.User.CellPhoneNumber, utility: Utility);
+
+			if (validIPResult.IsSuccess == false)
+			{
+				return Ok(value: validIPResult);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی کیف پول بر اساس توکن
+			// **************************************************
+			var walletResult =
+				Services.WalletsService.CheckAndGetWalletByToken
+				(databaseContext: DatabaseContext, token: request.WalletToken);
+
+			if (walletResult.IsSuccess == false)
+			{
+				return Ok(value: walletResult);
+			}
+
+			var wallet =
+				walletResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (wallet == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(wallet));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی دسترسی شرکت به کیف پول مربوطه، بر اساس توکن‌های آن‌ها
+			// **************************************************
+			var companyWalletResult =
+				Services.CompanyWalletsService.CheckAndGetCompanyWalletByTokens
+				(databaseContext: DatabaseContext, companyToken: request.CompanyToken, walletToken: request.WalletToken);
+
+			if (companyWalletResult.IsSuccess == false)
+			{
+				return Ok(value: companyWalletResult);
+			}
+
+			var companyWallet =
+				companyWalletResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (companyWallet == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(companyWallet));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی کاربر
+			// **************************************************
+			var userResult =
+				Services.UsersService.CheckAndGetUserByCellPhoneNumber
+				(databaseContext: DatabaseContext,
+				cellPhoneNumber: request.User.CellPhoneNumber);
+
+			if (userResult.IsSuccess == false)
+			{
+				return Ok(value: userResult);
+			}
+
+			var user =
+				userResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (user == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(user));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بررسی دسترسی کاربر به کیف پول مربوطه
+			// **************************************************
+			var userWalletResult =
+				Services.UserWalletsService.CheckAndGetUserWallet(databaseContext: DatabaseContext,
+				cellPhoneNumber: request.User.CellPhoneNumber, walletToken: request.WalletToken);
+
+			if (userWalletResult.IsSuccess == false)
+			{
+				return Ok(value: userWalletResult);
+			}
+
+			var userWallet =
+				userWalletResult.Data;
+
+			// بودن null صرفا برای جلوگیری از اخطار
+			if (userWallet == null)
+			{
+				var errorMessage = string.Format
+					(format: Resources.Messages.Errors.TheItemIsNull,
+					arg0: nameof(userWallet));
+
+				result.AddErrorMessages
+					(message: errorMessage);
+
+				return Ok(value: result);
+			}
+			// **************************************************
+
+			// **************************************************
+			// بدست آوردن مانده کیف پول کاربر
+			// با احتساب چک کردن معتبر بودن آن
+			// **************************************************
+			var userBalanceResult =
+				Services.UserWalletsService.GetUserBalanceWithCheckingDataConsistency
+				(databaseContext: DatabaseContext, walletToken: request.WalletToken,
+				cellPhoneNumber: request.User.CellPhoneNumber, userWallet: userWallet);
+
+			if (userBalanceResult.IsSuccess == false)
+			{
+				return Ok(value: userBalanceResult);
+			}
+			// **************************************************
+
+			// **************************************************
+			// **************************************************
+			// **************************************************
+			var query =
+				DatabaseContext.Transactions.AsQueryable()
 				.AsNoTracking()
-				.Where(current => current.User != null && current.User.CellPhoneNumber == request.CellPhoneNumber)
+				.Where(current => current.WalletId == wallet.Id)
+				.Where(current => current.User != null && current.User.CellPhoneNumber == request.User.CellPhoneNumber)
+				;
+			// **************************************************
+
+			// **************************************************
+			var foundedItems =
+				await
+				query
 				.OrderBy(current => current.InsertDateTime)
 				.Skip(count: request.Skip)
 				.Take(count: request.PageSize)
@@ -1887,7 +2323,6 @@ public class UsersController :
 					UserId = current.UserId,
 					WalletId = current.WalletId,
 					IsCleared = current.IsCleared,
-					PartyUserId = current.PartyUserId,
 					WithdrawDate = current.WithdrawDate,
 					AdditionalData = current.AdditionalData,
 					InsertDateTime = current.InsertDateTime,
@@ -1899,14 +2334,60 @@ public class UsersController :
 				})
 				.ToListAsync()
 				;
+			// **************************************************
 
-			return Ok(value: items);
+			// **************************************************
+			var totalCount =
+				await
+				query.CountAsync();
+			// **************************************************
+
+			// **************************************************
+			var depositeTotalAmount =
+				await
+				query
+				.Where(current => current.Type == Dtat.Wallet.Abstractions.SeedWork.TransactionType.Deposite)
+				.SumAsync(current => current.Amount);
+
+			var withdrawTotalAmount =
+				await
+				query
+				.Where(current => current.Type == Dtat.Wallet.Abstractions.SeedWork.TransactionType.Withdraw)
+				.SumAsync(current => current.Amount);
+			// **************************************************
+
+			// **************************************************
+			var depositeCurrentItemsTotalAmount =
+				foundedItems
+				.Where(current => current.Type == Dtat.Wallet.Abstractions.SeedWork.TransactionType.Deposite)
+				.Sum(current => current.Amount);
+
+			var withdrawCurrentItemsTotalAmount =
+				foundedItems
+				.Where(current => current.Type == Dtat.Wallet.Abstractions.SeedWork.TransactionType.Withdraw)
+				.Sum(current => current.Amount);
+			// **************************************************
+			// **************************************************
+			// **************************************************
+
+			result.Data =
+				new Dtos.Users.GetTransactionsResponseDto
+				{
+					Items = foundedItems,
+					TotalCount = totalCount,
+					DepositeTotalAmount = depositeTotalAmount,
+					WithdrawTotalAmount = withdrawTotalAmount,
+					DepositeCurrentItemsTotalAmount = depositeCurrentItemsTotalAmount,
+					WithdrawCurrentItemsTotalAmount = withdrawCurrentItemsTotalAmount,
+				};
+
+			return Ok(value: result);
 		}
 		catch (System.Exception ex)
 		{
 			var applicationError =
 				new Infrastructure.ApplicationError
-				(code: Infrastructure.Constant.ErrorCode.Root_UsersController_GetUserTransactionsByCellPhoneNumber,
+				(code: Infrastructure.Constant.ErrorCode.Root_UsersController_GetUserTransactions,
 				message: ex.Message, innerException: ex);
 
 			Logger.LogError
@@ -1916,5 +2397,5 @@ public class UsersController :
 				.Http.StatusCodes.Status500InternalServerError, value: applicationError.DisplayMessage);
 		}
 	}
-	#endregion /Action: GetUserTransactionsByCellPhoneNumberAsync()
+	#endregion /Action: GetTransactions()
 }

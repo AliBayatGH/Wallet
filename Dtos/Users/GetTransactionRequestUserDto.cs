@@ -1,11 +1,10 @@
 ﻿namespace Dtos.Users;
 
-public class RefundRequestUserDto : object
+public class GetTransactionRequestUserDto : object
 {
 	#region Constructor
-	public RefundRequestUserDto() : base()
+	public GetTransactionRequestUserDto() : base()
 	{
-		IP = string.Empty;
 		CellPhoneNumber = string.Empty;
 	}
 	#endregion /Constructor
@@ -16,12 +15,9 @@ public class RefundRequestUserDto : object
 	/// <summary>
 	/// آی‌پی کاربر
 	/// </summary>
-	[System.ComponentModel.DataAnnotations.Required
-		(AllowEmptyStrings = false)]
-
 	[System.ComponentModel.DataAnnotations.MaxLength
 		(length: Dtat.Wallet.Abstractions.SeedWork.Constant.MaxLength.IP)]
-	public string IP { get; set; }
+	public string? IP { get; set; }
 	#endregion /IP (User IP)
 
 	#region CellPhoneNumber
