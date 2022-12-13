@@ -1,0 +1,23 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - develop
+
+resources:
+ repositories:
+   - repository: tpls
+     type: git
+     name: Hastim/HIT.Hastim.pipeLines
+
+extends:
+  template: wallet-core-yaml.yml@tpls
+  parameters:
+    agentName: cms_group
+    project: Hastim
+    repo: HIT.Hastim.HastiWallet
+    projects:
+      - alias: walletservice
+        name:  Services
+        path:  WalletService/Services
+        linuxFriendlyPath: WalletService\/Services
