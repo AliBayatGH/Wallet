@@ -2050,6 +2050,7 @@ public class UsersController :
 				.Where(current => current.Id == request.TransactionId)
 				.Where(current => current.WalletId == wallet.Id)
 				.Where(current => current.User != null && current.User.CellPhoneNumber == request.User.CellPhoneNumber)
+				.Include(current => current.User)
 				.Select(current => new Dtos.Users.GetTransactionResponseDto
 				{
 					Type = current.Type,
@@ -2059,9 +2060,11 @@ public class UsersController :
 					WalletId = current.WalletId,
 					IsCleared = current.IsCleared,
 					WithdrawDate = current.WithdrawDate,
+					DisplayName = current!.User.DisplayName,
 					AdditionalData = current.AdditionalData,
 					InsertDateTime = current.InsertDateTime,
 					UserDescription = current.UserDescription,
+					CellPhoneNumber = current.CellPhoneNumber,
 					SystemicDescription = current.SystemicDescription,
 					PaymentReferenceCode = current.PaymentReferenceCode,
 					DepositeOrWithdrawProviderName = current.DepositeOrWithdrawProviderName,
@@ -2357,12 +2360,54 @@ public class UsersController :
 			// **************************************************
 
 			// **************************************************
+			if (request.Type.HasValue)
+			{
+				query =
+					query
+					.Where(current => current.Type == request.Type.Value);
+			}
+			// **************************************************
+
+			// **************************************************
+			if (request.FromDate.HasValue)
+			{
+				query =
+					query
+					.Where(current => current.InsertDateTime >= request.FromDate.Value.Date);
+			}
+
+			if (request.ToDate.HasValue)
+			{
+				query =
+					query
+					.Where(current => current.InsertDateTime <= request.ToDate.Value.Date);
+			}
+			// **************************************************
+
+			// **************************************************
+			if (request.MinimumAmount.HasValue)
+			{
+				query =
+					query
+					.Where(current => current.Amount >= request.MinimumAmount.Value);
+			}
+
+			if (request.MaximumAmount.HasValue)
+			{
+				query =
+					query
+					.Where(current => current.Amount <= request.MaximumAmount.Value);
+			}
+			// **************************************************
+
+			// **************************************************
 			var foundedItems =
 				await
 				query
 				.OrderBy(current => current.InsertDateTime)
 				.Skip(count: request.Skip)
 				.Take(count: request.PageSize)
+				.Include(current => current.User)
 				.Select(current => new Dtos.Users.GetTransactionResponseDto
 				{
 					Type = current.Type,
@@ -2372,9 +2417,11 @@ public class UsersController :
 					WalletId = current.WalletId,
 					IsCleared = current.IsCleared,
 					WithdrawDate = current.WithdrawDate,
+					DisplayName = current!.User.DisplayName,
 					AdditionalData = current.AdditionalData,
 					InsertDateTime = current.InsertDateTime,
 					UserDescription = current.UserDescription,
+					CellPhoneNumber = current.CellPhoneNumber,
 					SystemicDescription = current.SystemicDescription,
 					PaymentReferenceCode = current.PaymentReferenceCode,
 					DepositeOrWithdrawProviderName = current.DepositeOrWithdrawProviderName,
