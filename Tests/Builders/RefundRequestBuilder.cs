@@ -1,38 +1,34 @@
 ﻿namespace Tests.Builders;
 
-internal class DepositeRequestBuilder : object
+internal class RefundRequestBuilder : object
 {
 	#region Create()
-	internal static DepositeRequestBuilder Create()
+	internal static RefundRequestBuilder Create(long transactionId)
 	{
-		return new DepositeRequestBuilder();
+		return new RefundRequestBuilder(transactionId: transactionId);
 	}
 	#endregion /Create()
 
 	#region Constructor()
-	private DepositeRequestBuilder() : base()
+	private RefundRequestBuilder(long transactionId) : base()
 	{
 		Amount =
 			Setups.Constants.Shared.Amount;
 
-		ReferenceCode =
-			Helpers.Utility.ReferenceCode;
-
-		ProviderName =
-			Setups.Constants.Shared.IranKishProviderName;
+		TransactionId = transactionId;
 
 		WithdrawDurationInDays =
 			Setups.Constants.Shared.WithdrawDurationInDaysNeutralValue;
 
 		User =
-			DepositeRequestUserBuilder.Create();
+			RefundRequestUserBuilder.Create();
 	}
 	#endregion /Constructor()
 
 	#region Properties
 
 	#region User
-	public DepositeRequestUserBuilder User { get; set; }
+	public RefundRequestUserBuilder User { get; set; }
 	#endregion /User
 
 	#region Amount
@@ -51,13 +47,9 @@ internal class DepositeRequestBuilder : object
 	public int? WithdrawDurationInDays { get; set; }
 	#endregion /WithdrawDurationInDays
 
-	#region ProviderName (PSP)
-	public string ProviderName { get; set; }
-	#endregion /ProviderName
-
-	#region ReferenceCode
-	public string ReferenceCode { get; set; }
-	#endregion /ReferenceCode
+	#region TransactionId
+	public long TransactionId { get; set; }
+	#endregion /TransactionId
 
 	#region UserDescription
 	public string? UserDescription { get; set; }
@@ -74,63 +66,48 @@ internal class DepositeRequestBuilder : object
 	#endregion /Properties
 
 	#region Methods()
-	public DepositeRequestBuilder WithAmount(decimal amount)
+	public RefundRequestBuilder WithAmount(decimal amount)
 	{
 		Amount = amount;
 
 		return this;
 	}
 
-	public DepositeRequestBuilder WithWithdrawDurationInDays(int? withdrawDurationInDays)
+	public RefundRequestBuilder WithWithdrawDurationInDays(int? withdrawDurationInDays)
 	{
 		WithdrawDurationInDays = withdrawDurationInDays;
 
 		return this;
 	}
 
-	public DepositeRequestBuilder WithProviderName(string providerName)
-	{
-		ProviderName = providerName;
-
-		return this;
-	}
-
-	public DepositeRequestBuilder WithWalletToken(System.Guid walletToken)
+	public RefundRequestBuilder WithWalletToken(System.Guid walletToken)
 	{
 		WalletToken = walletToken;
 
 		return this;
 	}
-	
-	public DepositeRequestBuilder WithCompanyToken(System.Guid companyToken)
+
+	public RefundRequestBuilder WithCompanyToken(System.Guid companyToken)
 	{
 		CompanyToken = companyToken;
-
-		return this;
-	}
-
-	public DepositeRequestBuilder WithReferenceCode(string referenceCode)
-	{
-		ReferenceCode = referenceCode;
 
 		return this;
 	}
 	#endregion /Methods()
 
 	#region Build()
-	internal Dtos.Users.DepositeRequestDto Build()
+	internal Dtos.Users.RefundRequestDto Build()
 	{
 		var user = User.Build();
 
 		var request =
-			new Dtos.Users.DepositeRequestDto()
+			new Dtos.Users.RefundRequestDto()
 			{
 				User = user,
 				Amount = Amount,
 				WalletToken = WalletToken,
-				ProviderName = ProviderName,
 				CompanyToken = CompanyToken,
-				ReferenceCode = ReferenceCode,
+				TransactionId = TransactionId,
 				AdditionalData = AdditionalData,
 				UserDescription = UserDescription,
 				SystemicDescription = SystemicDescription,
